@@ -46,16 +46,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
         <h3 className="timer-label" title={label}>
           {label}
         </h3>
-        <button
-          onClick={() => onDelete(timer.id)}
-          className="btn-delete"
-          aria-label="タイマーを削除"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
       </div>
 
       <div className="timer-display-container">
@@ -93,13 +83,13 @@ export const TimerCard: React.FC<TimerCardProps> = ({
       <div className="timer-controls">
         {isCompleted ? (
           <button
-            onClick={() => onReset(timer.id)}
-            className="btn btn-control btn-reset btn-full-width"
+            onClick={() => onDelete(timer.id)}
+            className="btn btn-control btn-danger btn-full-width"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              <rect x="4" y="4" width="16" height="16" />
             </svg>
-            もう一度開始する
+            停止
           </button>
         ) : (
           <>
@@ -108,7 +98,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 onClick={() => onPause(timer.id)}
                 className="btn btn-control btn-pause"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
                   <rect x="6" y="4" width="4" height="16" />
                   <rect x="14" y="4" width="4" height="16" />
                 </svg>
@@ -119,7 +109,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 onClick={() => onResume(timer.id)}
                 className="btn btn-control btn-resume"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
                 再開
@@ -129,10 +119,20 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               onClick={() => onReset(timer.id)}
               className="btn btn-control btn-reset"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
               </svg>
               リセット
+            </button>
+            <button
+              onClick={() => onDelete(timer.id)}
+              className="btn btn-control btn-danger"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              削除
             </button>
           </>
         )}

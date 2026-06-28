@@ -3,6 +3,7 @@ import type { Timer } from './types/timer';
 import { TimerForm } from './components/TimerForm';
 import { TimerCard } from './components/TimerCard';
 import { speak } from './utils/speech';
+import { startAlarm, stopAlarm } from './utils/audio';
 import './App.css';
 
 function App() {
@@ -128,6 +129,7 @@ function App() {
           if (!voicedEnd) {
             textsToSpeak.push(`${timer.label}が終了しました。`);
             voicedEnd = true;
+            startAlarm(timer.id);
           }
         } else {
           // 60分(3600秒)を超える場合のみ30分(1800秒)予告
@@ -237,6 +239,7 @@ function App() {
   // リセット
   const handleReset = (id: string) => {
     unlockAudio();
+    stopAlarm(id);
     setTimers((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
@@ -257,6 +260,7 @@ function App() {
 
   // 削除
   const handleDelete = (id: string) => {
+    stopAlarm(id);
     setTimers((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -294,6 +298,7 @@ function App() {
   // 全て削除
   const handleClearAll = () => {
     if (window.confirm('すべてのタイマーを削除しますか？')) {
+      timers.forEach((t) => stopAlarm(t.id));
       setTimers([]);
     }
   };
