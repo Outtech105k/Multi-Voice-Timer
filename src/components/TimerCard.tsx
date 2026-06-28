@@ -1,0 +1,156 @@
+import React from 'react';
+import type { Timer } from '../types/timer';
+
+interface TimerCardProps {
+  timer: Timer;
+  onPause: (id: string) => void;
+  onResume: (id: string) => void;
+  onReset: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+export const TimerCard: React.FC<TimerCardProps> = ({
+  timer,
+  onPause,
+  onResume,
+  onReset,
+  onDelete,
+}) => {
+  const { label, duration, remaining, status } = timer;
+
+  // 時間のフォーマット表示 (HH:MM:SS)
+  const formatTime = (totalSeconds: number): string => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const pad = (num: number) => String(num).padStart(2, '0');
+
+    if (hrs > 0) {
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+    return `${pad(mins)}:${pad(secs)}`;
+  };
+
+  // プログレスサークルの計算
+  const radius = 64;
+  const circumference = 2 * Math.PI * radius;
+  const progress = duration > 0 ? remaining / duration : 0;
+  const strokeDashoffset = circumference - progress * circumference;
+
+  const isCompleted = status === 'completed';
+
+  return (
+    <div className={`timer-card glass ${status} ${isCompleted ? 'completed-pulse' : ''}`}>
+      <div className="timer-header">
+        <h3 className="timer-label" title={label}>
+          {label}
+        </h3>
+        <button
+          onClick={() => onDelete(timer.id)}
+          className="btn-delete"
+          aria-label="タイマーを削除"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div className="timer-display-container">
+        {/* 円形プログレスバー */}
+        <div className="progress-circle-wrapper">
+          <svg className="progress-circle" width="160" height="160" viewBox="0 0 160 160">
+            {/* 背景サークル */}
+            <circle
+              className="progress-bg"
+              cx="80"
+              cy="80"
+              r={radius}
+              strokeWidth="8"
+            />
+            {/* 進捗サークル */}
+            <circle
+              className="progress-bar"
+              cx="80"
+              cy="80"
+              r={radius}
+              strokeWidth="8"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              transform="rotate(-90 80 80)"
+              strokeLinecap="round"
+            />
+          </svg>
+          <div className="timer-digital-display">
+            <span className="time-text">{formatTime(remaining)}</span>
+            <span className="total-time">初期設定: {formatTime(duration)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="timer-controls">
+        {isCompleted ? (
+          <button
+            onClick={() => onReset(timer.id)}
+            className="btn btn-control btn-reset btn-full-width"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+            </svg>
+            もう一度開始する
+          </button>
+        ) : (
+          <>
+            {status === 'running' ? (
+              <button
+                onClick={() => onPause(timer.id)}
+                className="btn btn-control btn-pause"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                  <rect x="6" y="4" width="4" height="16" />
+                  <rect x="14" y="4" width="4" height="16" />
+                </svg>
+                一時停止
+              </button>
+            ) : (
+              <button
+                onClick={() => onResume(timer.id)}
+                className="btn btn-control btn-resume"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                再開
+              </button>
+            )}
+            <button
+              onClick={() => onReset(timer.id)}
+              className="btn btn-control btn-reset"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+              リセット
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* 予告情報インジケーター */}
+      {!isCompleted && (
+        <div className="preview-indicator">
+          {duration > 3600 && (
+            <span className={`badge ${timer.voiced30Min ? 'done' : 'pending'}`}>
+              30分前予告
+            </span>
+          )}
+          <span className={`badge ${timer.voiced10Min ? 'done' : 'pending'}`}>
+            10分前予告
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
