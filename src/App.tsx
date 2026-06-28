@@ -190,26 +190,19 @@ function App() {
   }, []);
 
   // 音声の事前アンロック（ブラウザの自動再生ポリシー対策）
-  const unlockAudio = () => {
+  const unlockAudio = (silent = false) => {
     if (!audioUnlocked) {
-      if (voiceEnabledRef.current) {
-        speak('音声読み上げ機能を有効化しました。');
-      } else {
-        playChime();
+      if (!silent) {
+        if (voiceEnabledRef.current) {
+          speak('音声読み上げ機能を有効化しました。');
+        } else {
+          playChime();
+        }
       }
       setAudioUnlocked(true);
     }
   };
 
-  // テスト発話
-  const handleTestSpeech = () => {
-    if (voiceEnabled) {
-      speak('テストタイマー、残り10分前。');
-    } else {
-      playChime();
-    }
-    setAudioUnlocked(true);
-  };
 
   // 新規タイマー追加
   const handleAddTimer = (label: string, hours: number, minutes: number, seconds: number) => {
@@ -336,7 +329,7 @@ function App() {
   const completedCount = timers.filter((t) => t.status === 'completed').length;
 
   return (
-    <div className="app-container" onClick={unlockAudio}>
+    <div className="app-container" onClick={() => unlockAudio(false)}>
       <header className="app-header glass">
         <div className="header-brand">
           <div>
@@ -345,16 +338,29 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
-          <button 
-            className={`btn btn-speech-status ${audioUnlocked ? 'unlocked' : 'locked'}`}
-            onClick={handleTestSpeech}
-            title={audioUnlocked ? (voiceEnabled ? 'クリックしてテスト発話' : 'クリックしてチャイムテスト') : 'クリックして音声を有効化'}
-          >
-            <span className="indicator-dot"></span>
-            {audioUnlocked 
-              ? (voiceEnabled ? '音声読み上げ: 有効' : '音声読み上げ: 無効（チャイムのみ）') 
-              : '音声機能: 未解除（クリックで有効化）'}
-          </button>
+          <div className="header-toggle-container" onClick={(e) => e.stopPropagation()}>
+            <span className="toggle-label-header">
+              {voiceEnabled ? '音声読み上げ: ON' : '音声読み上げ: OFF'}
+            </span>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={voiceEnabled}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  unlockAudio(true); // サイレントアンロックを実行
+                  setVoiceEnabled(val);
+                  // オンオフ切り替え時の即時フィードバック
+                  if (val) {
+                    speak('音声読み上げを有効にしました。');
+                  } else {
+                    playChime();
+                  }
+                }}
+              />
+              <span className="slider round"></span>
+            </label>
+          </div>
         </div>
       </header>
 
@@ -377,18 +383,6 @@ function App() {
                 <span className="stat-val text-completed">{completedCount}</span>
                 <span className="stat-label">完了</span>
               </div>
-            </div>
-
-            <div className="toggle-container">
-              <span className="toggle-label">音声読み上げを有効化</span>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={voiceEnabled}
-                  onChange={(e) => setVoiceEnabled(e.target.checked)}
-                />
-                <span className="slider round"></span>
-              </label>
             </div>
             
             {timers.length > 0 && (
