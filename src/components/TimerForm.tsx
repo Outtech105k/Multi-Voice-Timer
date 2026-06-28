@@ -10,6 +10,19 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
 
+  const getDefaultLabel = (h: number, m: number, s: number) => {
+    const totalSeconds = h * 3600 + m * 60 + s;
+    if (totalSeconds % 60 === 0) {
+      return `${totalSeconds / 60}分タイマー`;
+    } else if (totalSeconds < 60) {
+      return `${totalSeconds}秒タイマー`;
+    } else {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return `${mins}分${secs}秒タイマー`;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -19,7 +32,7 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
       return;
     }
 
-    const finalLabel = label.trim() || `タイマー ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const finalLabel = label.trim() || getDefaultLabel(hours, minutes, seconds);
     onAddTimer(finalLabel, hours, minutes, seconds);
 
     // フォームリセット
@@ -33,7 +46,7 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
     setHours(h);
     setMinutes(m);
     setSeconds(s);
-    if (!label.trim()) {
+    if (!label.trim() || label.endsWith('分タイマー') || label.endsWith('秒タイマー')) {
       setLabel(presetLabel);
     }
   };
@@ -103,42 +116,42 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(0, 3, 0, 'カップラーメン')}
+            onClick={() => applyPreset(0, 3, 0, '3分タイマー')}
           >
             3分
           </button>
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(0, 5, 0, 'パスタ茹で')}
+            onClick={() => applyPreset(0, 5, 0, '5分タイマー')}
           >
             5分
           </button>
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(0, 10, 0, '読書時間')}
+            onClick={() => applyPreset(0, 10, 0, '10分タイマー')}
           >
             10分
           </button>
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(0, 25, 0, 'ポモドーロ')}
+            onClick={() => applyPreset(0, 25, 0, '25分タイマー')}
           >
             25分
           </button>
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(0, 45, 0, '運動／ヨガ')}
+            onClick={() => applyPreset(0, 45, 0, '45分タイマー')}
           >
             45分
           </button>
           <button
             type="button"
             className="btn btn-preset"
-            onClick={() => applyPreset(1, 15, 0, '長時間タスク')}
+            onClick={() => applyPreset(1, 15, 0, '75分タイマー')}
           >
             75分
           </button>
