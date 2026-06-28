@@ -9,12 +9,23 @@ import './App.css';
 function App() {
   const [timers, setTimers] = useState<Timer[]>([]);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(() => {
+    const saved = localStorage.getItem('agy_voice_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+  
   const timersRef = useRef<Timer[]>(timers);
+  const voiceEnabledRef = useRef(voiceEnabled);
 
-  // タイマーの最新参照を常に保持
+  // 最新参照を常に保持
   useEffect(() => {
     timersRef.current = timers;
   }, [timers]);
+
+  useEffect(() => {
+    voiceEnabledRef.current = voiceEnabled;
+    localStorage.setItem('agy_voice_enabled', voiceEnabled.toString());
+  }, [voiceEnabled]);
 
   // マウント時にLocalStorageから復元
   useEffect(() => {
@@ -167,8 +178,10 @@ function App() {
         if (shouldPlaySingleChime) {
           playChime();
         }
-        // 発話を一括実行（状態更新と副作用を分離）
-        textsToSpeak.forEach((text) => speak(text));
+        // 発話を一括実行（音声読み上げが有効な場合のみ）
+        if (voiceEnabledRef.current) {
+          textsToSpeak.forEach((text) => speak(text));
+        }
         setTimers(nextTimers);
       }
     }, 200);
@@ -179,14 +192,22 @@ function App() {
   // 音声の事前アンロック（ブラウザの自動再生ポリシー対策）
   const unlockAudio = () => {
     if (!audioUnlocked) {
-      speak('音声読み上げ機能を有効化しました。');
+      if (voiceEnabledRef.current) {
+        speak('音声読み上げ機能を有効化しました。');
+      } else {
+        playChime();
+      }
       setAudioUnlocked(true);
     }
   };
 
   // テスト発話
   const handleTestSpeech = () => {
-    speak('テストタイマー、残り10分前。');
+    if (voiceEnabled) {
+      speak('テストタイマー、残り10分前。');
+    } else {
+      playChime();
+    }
     setAudioUnlocked(true);
   };
 
@@ -327,10 +348,12 @@ function App() {
           <button 
             className={`btn btn-speech-status ${audioUnlocked ? 'unlocked' : 'locked'}`}
             onClick={handleTestSpeech}
-            title={audioUnlocked ? 'クリックしてテスト発話' : 'クリックして音声を有効化'}
+            title={audioUnlocked ? (voiceEnabled ? 'クリックしてテスト発話' : 'クリックしてチャイムテスト') : 'クリックして音声を有効化'}
           >
             <span className="indicator-dot"></span>
-            {audioUnlocked ? '音声読み上げ: 有効' : '音声読み上げ: ロック中（クリックで有効化）'}
+            {audioUnlocked 
+              ? (voiceEnabled ? '音声読み上げ: 有効' : '音声読み上げ: 無効（チャイムのみ）') 
+              : '音声機能: 未解除（クリックで有効化）'}
           </button>
         </div>
       </header>
@@ -354,6 +377,18 @@ function App() {
                 <span className="stat-val text-completed">{completedCount}</span>
                 <span className="stat-label">完了</span>
               </div>
+            </div>
+
+            <div className="toggle-container">
+              <span className="toggle-label">音声読み上げを有効化</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={voiceEnabled}
+                  onChange={(e) => setVoiceEnabled(e.target.checked)}
+                />
+                <span className="slider round"></span>
+              </label>
             </div>
             
             {timers.length > 0 && (
