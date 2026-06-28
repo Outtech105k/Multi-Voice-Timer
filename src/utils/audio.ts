@@ -75,12 +75,12 @@ export const playChime = () => {
 
     const now = ctx.currentTime;
 
-    // 1音目:「キン」- 高音で澄んだ響き (A5: 880Hz)
-    playBellNote(ctx, 880, now, 1.5, 0.25);
+    // 1音目:「キン」- 高音で非常に澄んだ響き (E6: 1318.51Hz)
+    playBellNote(ctx, 1318.51, now, 1.5, 0.25);
 
-    // 2音目:「コン」- 低音で温かみのある響き (F5: 698.46Hz)
+    // 2音目:「コン」- 響きのある中高音 (C6: 1046.50Hz)
     // 0.45秒ずらして再生を開始する
-    playBellNote(ctx, 698.46, now + 0.45, 1.8, 0.25);
+    playBellNote(ctx, 1046.50, now + 0.45, 1.8, 0.25);
   } catch (error) {
     console.error('Web Audio API double bell chime failed:', error);
   }
