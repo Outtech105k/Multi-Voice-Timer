@@ -15,7 +15,56 @@ const getAudioContext = (): AudioContext => {
 };
 
 /**
- * 美しく澄んだベル音（ハンドベル／クリスタルベル）を再生
+ * 澄んだベルの倍音成分（ハンドベル）をシミュレートして単音を再生
+ */
+const playBellNote = (
+  ctx: AudioContext,
+  f0: number,
+  startTime: number,
+  masterDecay: number,
+  maxVolume: number
+) => {
+  const now = startTime;
+
+  // 各ノートの音量を制御するゲインノード
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, now);
+  masterGain.gain.linearRampToValueAtTime(maxVolume, now + 0.005); // 鋭いアタック
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + masterDecay);
+  masterGain.connect(ctx.destination);
+
+  // ベルの金属的な響きを作るための非調和倍音成分
+  const partials = [
+    { ratio: 1.0,   gain: 0.35, decay: masterDecay },
+    { ratio: 1.20,  gain: 0.20, decay: masterDecay * 0.77 },
+    { ratio: 1.50,  gain: 0.15, decay: masterDecay * 0.66 },
+    { ratio: 2.00,  gain: 0.10, decay: masterDecay * 0.44 },
+    { ratio: 2.51,  gain: 0.08, decay: masterDecay * 0.27 },
+    { ratio: 3.00,  gain: 0.05, decay: masterDecay * 0.16 }
+  ];
+
+  partials.forEach((p) => {
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    // 基音にはふくよかな三角波、高倍音にはクリアなサイン波を使用
+    osc.type = p.ratio === 1.0 ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(f0 * p.ratio, now);
+
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(p.gain, now + 0.005);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
+
+    osc.connect(gainNode);
+    gainNode.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + p.decay + 0.1);
+  });
+};
+
+/**
+ * 2音の連続するベル音（キンコン）を再生
  */
 export const playChime = () => {
   try {
@@ -25,51 +74,15 @@ export const playChime = () => {
     }
 
     const now = ctx.currentTime;
-    
-    // 基音の周波数 (A5: 880Hz) - 明るく澄んだ音高
-    const f0 = 880;
 
-    // ベル音を構成する非調和倍音（Partial）の定義: [周波数比率, 音量比率, 減衰比率]
-    // ベルの金属的な響き（不協和音成分）を作るためにわずかに不規則な比率を使用します
-    const partials = [
-      { ratio: 1.0,   gain: 0.35, decay: 1.8 }, // 基音 (Fundamental)
-      { ratio: 1.20,  gain: 0.20, decay: 1.4 }, // 金属質な特徴を出す短三度成分
-      { ratio: 1.50,  gain: 0.15, decay: 1.2 }, // 完全五度
-      { ratio: 2.00,  gain: 0.10, decay: 0.8 }, // 1オクターブ上
-      { ratio: 2.51,  gain: 0.08, decay: 0.5 }, // 非調和高周波
-      { ratio: 3.00,  gain: 0.05, decay: 0.3 }  // 高調波
-    ];
+    // 1音目:「キン」- 高音で澄んだ響き (A5: 880Hz)
+    playBellNote(ctx, 880, now, 1.5, 0.25);
 
-    // 全体の音量を制御するマスタゲイン（急峻なアタックと滑らかなリリースの全体包絡線）
-    const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(0.3, now + 0.005); // 0.005秒で最大音量へ（叩くアタック感）
-    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0); // 2秒かけて自然にフェードアウト
-    masterGain.connect(ctx.destination);
-
-    // 各倍音成分の発振器を起動
-    partials.forEach((p) => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      // 基音には少しふくよかさを出すために三角波、高調波には澄んだサイン波を使用
-      osc.type = p.ratio === 1.0 ? 'triangle' : 'sine';
-      osc.frequency.setValueAtTime(f0 * p.ratio, now);
-
-      // 個々の倍音エンベロープ（高音域ほど速く減衰する物理法則を再現）
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(p.gain, now + 0.005);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
-
-      osc.connect(gainNode);
-      gainNode.connect(masterGain);
-
-      osc.start(now);
-      // 再生終了後にリソースを解放するため停止時間を設定
-      osc.stop(now + p.decay + 0.1);
-    });
+    // 2音目:「コン」- 低音で温かみのある響き (F5: 698.46Hz)
+    // 0.45秒ずらして再生を開始する
+    playBellNote(ctx, 698.46, now + 0.45, 1.8, 0.25);
   } catch (error) {
-    console.error('Web Audio API bell chime failed:', error);
+    console.error('Web Audio API double bell chime failed:', error);
   }
 };
 
@@ -83,14 +96,14 @@ export const startAlarm = (timerId: string) => {
     // 初回は即座に鳴らす
     playChime();
 
-    // 2秒おきにチャイムを繰り返し再生するループを設定
+    // 2.5秒おきに「キンコン」を繰り返し再生するループを設定
     alarmIntervalId = window.setInterval(() => {
       if (activeAlarms.size > 0) {
         playChime();
       } else {
         stopAllAlarms();
       }
-    }, 2000);
+    }, 2500);
   }
 };
 
