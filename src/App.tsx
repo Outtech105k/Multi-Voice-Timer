@@ -311,7 +311,6 @@ function App() {
     <div className="app-container" onClick={unlockAudio}>
       <header className="app-header glass">
         <div className="header-brand">
-          <div className="logo-icon">⏱️</div>
           <div>
             <h1>Multi-Voice Timer</h1>
             <p className="subtitle">予告・読み上げ機能付きマルチタイマー</p>
@@ -373,7 +372,6 @@ function App() {
         <section className="timers-display-section">
           {timers.length === 0 ? (
             <div className="empty-state glass">
-              <div className="empty-icon">⏳</div>
               <h2>タイマーが登録されていません</h2>
               <p>左側のフォームからタイマーを追加して、マルチタスクを開始しましょう。</p>
               <p className="hint">※バックグラウンドでブラウザタブを開いていても、タイマーは正確に動作し、音声で予告・通知します。</p>
