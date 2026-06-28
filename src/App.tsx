@@ -88,76 +88,80 @@ function App() {
   // 高精度インターバルタイマー (200ms周期)
   useEffect(() => {
     const intervalId = setInterval(() => {
-      const activeTimers = timersRef.current.filter((t) => t.status === 'running');
+      const currentTimers = timersRef.current;
+      const activeTimers = currentTimers.filter((t) => t.status === 'running');
       if (activeTimers.length === 0) return;
 
-      setTimers((prevTimers) => {
-        let changed = false;
+      let changed = false;
+      const textsToSpeak: string[] = [];
 
-        const nextTimers = prevTimers.map((timer) => {
-          if (timer.status !== 'running' || !timer.startedAt) {
-            return timer;
+      const nextTimers = currentTimers.map((timer) => {
+        if (timer.status !== 'running' || !timer.startedAt) {
+          return timer;
+        }
+
+        const elapsedSeconds = Math.floor((Date.now() - timer.startedAt) / 1000);
+        const currentRemaining = Math.max(0, timer.duration - (timer.accumulatedElapsed + elapsedSeconds));
+
+        // 状態変更がない場合はオブジェクト参照を維持する
+        if (
+          currentRemaining === timer.remaining &&
+          timer.status === 'running'
+        ) {
+          return timer;
+        }
+
+        changed = true;
+
+        let nextStatus: Timer['status'] = timer.status;
+        let voiced30Min = timer.voiced30Min;
+        let voiced10Min = timer.voiced10Min;
+        let voicedEnd = timer.voicedEnd;
+        let nextStartedAt: number | undefined = timer.startedAt;
+        let nextAccumulatedElapsed = timer.accumulatedElapsed;
+
+        if (currentRemaining <= 0) {
+          nextStatus = 'completed';
+          nextStartedAt = undefined;
+          nextAccumulatedElapsed = timer.duration;
+
+          if (!voicedEnd) {
+            textsToSpeak.push(`${timer.label}が終了しました。`);
+            voicedEnd = true;
           }
-
-          const elapsedSeconds = Math.floor((Date.now() - timer.startedAt) / 1000);
-          const currentRemaining = Math.max(0, timer.duration - (timer.accumulatedElapsed + elapsedSeconds));
-
-          // 状態変更がない場合はオブジェクト参照を維持する
-          if (
-            currentRemaining === timer.remaining &&
-            timer.status === 'running'
-          ) {
-            return timer;
-          }
-
-          changed = true;
-
-          let nextStatus: Timer['status'] = timer.status;
-          let voiced30Min = timer.voiced30Min;
-          let voiced10Min = timer.voiced10Min;
-          let voicedEnd = timer.voicedEnd;
-          let nextStartedAt: number | undefined = timer.startedAt;
-          let nextAccumulatedElapsed = timer.accumulatedElapsed;
-
-          if (currentRemaining <= 0) {
-            nextStatus = 'completed';
-            nextStartedAt = undefined;
-            nextAccumulatedElapsed = timer.duration;
-
-            if (!voicedEnd) {
-              speak(`${timer.label}が終了しました。`);
-              voicedEnd = true;
-            }
-          } else {
-            // 60分(3600秒)を超える場合のみ30分(1800秒)予告
-            if (timer.duration > 3600) {
-              if (currentRemaining <= 1800 && !voiced30Min) {
-                speak(`${timer.label}、残り30分前。`);
-                voiced30Min = true;
-              }
-            }
-
-            // 10分(600秒)予告
-            if (currentRemaining <= 600 && !voiced10Min) {
-              speak(`${timer.label}、残り10分前。`);
-              voiced10Min = true;
+        } else {
+          // 60分(3600秒)を超える場合のみ30分(1800秒)予告
+          if (timer.duration > 3600) {
+            if (currentRemaining <= 1800 && !voiced30Min) {
+              textsToSpeak.push(`${timer.label}、残り30分前。`);
+              voiced30Min = true;
             }
           }
 
-          return {
-            ...timer,
-            remaining: currentRemaining,
-            status: nextStatus,
-            startedAt: nextStartedAt,
-            accumulatedElapsed: nextAccumulatedElapsed,
-            voiced30Min,
-            voiced10Min,
-            voicedEnd,
-          };
-        });
+          // 10分(600秒)予告
+          if (currentRemaining <= 600 && !voiced10Min) {
+            textsToSpeak.push(`${timer.label}、残り10分前。`);
+            voiced10Min = true;
+          }
+        }
 
-        return changed ? nextTimers : prevTimers;
+        return {
+          ...timer,
+          remaining: currentRemaining,
+          status: nextStatus,
+          startedAt: nextStartedAt,
+          accumulatedElapsed: nextAccumulatedElapsed,
+          voiced30Min,
+          voiced10Min,
+          voicedEnd,
+        };
       });
+
+      if (changed) {
+        // 発話を一括実行（状態更新と副作用を分離）
+        textsToSpeak.forEach((text) => speak(text));
+        setTimers(nextTimers);
+      }
     }, 200);
 
     return () => clearInterval(intervalId);
@@ -191,8 +195,9 @@ function App() {
       createdAt: now,
       startedAt: now,
       accumulatedElapsed: 0,
-      voiced30Min: false,
-      voiced10Min: false,
+      // 開始時点で設定時間以下の警告は不要なため、あらかじめ警告済みフラグを立てる
+      voiced30Min: duration <= 1800,
+      voiced10Min: duration <= 600,
       voicedEnd: false,
     };
     setTimers((prev) => [newTimer, ...prev]);
@@ -241,8 +246,9 @@ function App() {
           status: 'running',
           startedAt: Date.now(),
           accumulatedElapsed: 0,
-          voiced30Min: false,
-          voiced10Min: false,
+          // リセット時も設定時間以下の警告は不要
+          voiced30Min: t.duration <= 1800,
+          voiced10Min: t.duration <= 600,
           voicedEnd: false,
         };
       })
