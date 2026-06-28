@@ -3,7 +3,7 @@ import type { Timer } from './types/timer';
 import { TimerForm } from './components/TimerForm';
 import { TimerCard } from './components/TimerCard';
 import { speak } from './utils/speech';
-import { startAlarm, stopAlarm } from './utils/audio';
+import { playChime, startAlarm, stopAlarm } from './utils/audio';
 import './App.css';
 
 function App() {
@@ -94,6 +94,7 @@ function App() {
       if (activeTimers.length === 0) return;
 
       let changed = false;
+      let shouldPlaySingleChime = false;
       const textsToSpeak: string[] = [];
 
       const nextTimers = currentTimers.map((timer) => {
@@ -137,6 +138,7 @@ function App() {
             if (currentRemaining <= 1800 && !voiced30Min) {
               textsToSpeak.push(`${timer.label}、残り30分前。`);
               voiced30Min = true;
+              shouldPlaySingleChime = true;
             }
           }
 
@@ -144,6 +146,7 @@ function App() {
           if (currentRemaining <= 600 && !voiced10Min) {
             textsToSpeak.push(`${timer.label}、残り10分前。`);
             voiced10Min = true;
+            shouldPlaySingleChime = true;
           }
         }
 
@@ -160,6 +163,10 @@ function App() {
       });
 
       if (changed) {
+        // 予告タイミング（N分前）の場合、チャイムを1回再生
+        if (shouldPlaySingleChime) {
+          playChime();
+        }
         // 発話を一括実行（状態更新と副作用を分離）
         textsToSpeak.forEach((text) => speak(text));
         setTimers(nextTimers);
