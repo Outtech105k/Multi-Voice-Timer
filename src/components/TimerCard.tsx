@@ -85,11 +85,12 @@ export const TimerCard: React.FC<TimerCardProps> = ({
           <button
             onClick={() => onDelete(timer.id)}
             className="btn btn-control btn-danger btn-full-width"
+            title="アラーム停止"
+            aria-label="アラーム停止"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="4" y="4" width="16" height="16" />
             </svg>
-            停止
           </button>
         ) : (
           <>
@@ -97,42 +98,46 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               <button
                 onClick={() => onPause(timer.id)}
                 className="btn btn-control btn-pause"
+                title="一時停止"
+                aria-label="一時停止"
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="6" y="4" width="4" height="16" />
                   <rect x="14" y="4" width="4" height="16" />
                 </svg>
-                一時停止
               </button>
             ) : (
               <button
                 onClick={() => onResume(timer.id)}
                 className="btn btn-control btn-resume"
+                title="再開"
+                aria-label="再開"
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                再開
               </button>
             )}
             <button
               onClick={() => onReset(timer.id)}
               className="btn btn-control btn-reset"
+              title="リセット"
+              aria-label="リセット"
             >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
               </svg>
-              リセット
             </button>
             <button
               onClick={() => onDelete(timer.id)}
               className="btn btn-control btn-danger"
+              title="削除"
+              aria-label="削除"
             >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              削除
             </button>
           </>
         )}
