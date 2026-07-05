@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import type { Timer } from './types/timer';
 import { TimerForm } from './components/TimerForm';
 import { TimerCard } from './components/TimerCard';
-import { speak } from './utils/speech';
-import { playChime, startAlarm, stopAlarm } from './utils/audio';
+import { speak, unlockSpeechSynthesis } from './utils/speech';
+import { playChime, startAlarm, stopAlarm, unlockAudioContext } from './utils/audio';
 import './App.css';
 
 function App() {
@@ -191,6 +191,10 @@ function App() {
 
   // 音声の事前アンロック（ブラウザの自動再生ポリシー対策）
   const unlockAudio = (silent = false) => {
+    // Safariなどのブラウザ制限を解除するため、ユーザー操作の同期コールスタック内で毎回アンロック関数を呼ぶ
+    unlockAudioContext();
+    unlockSpeechSynthesis();
+
     if (!audioUnlocked) {
       if (!silent) {
         if (voiceEnabledRef.current) {

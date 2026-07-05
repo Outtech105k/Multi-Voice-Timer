@@ -6,7 +6,17 @@
 let isSpeaking = false;
 const speechQueue: string[] = [];
 
+// SafariのGC（ガベージコレクション）による発話バグを防ぐための参照保持用Set
+const activeUtterances = new Set<SpeechSynthesisUtterance>();
+
 const processQueue = () => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+  // Safariのポーズバグ対策として、再生前にresumeを実行
+  if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+  }
+
   if (isSpeaking || speechQueue.length === 0) return;
 
   const nextText = speechQueue.shift();
@@ -16,23 +26,43 @@ const processQueue = () => {
   const utterance = new SpeechSynthesisUtterance(nextText);
   utterance.lang = 'ja-JP';
 
+  // 参照を保持してGCを防ぐ
+  activeUtterances.add(utterance);
+
   // 日本語の音声を探す
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
-    const voices = window.speechSynthesis.getVoices();
-    const jaVoice = voices.find(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
-    if (jaVoice) {
-      utterance.voice = jaVoice;
-    }
+  const voices = window.speechSynthesis.getVoices();
+  const jaVoice = voices.find(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
+  if (jaVoice) {
+    utterance.voice = jaVoice;
   }
 
-  utterance.onend = () => {
+  // Safari等のブラウザで、onendやonerrorが呼ばれずにフリーズするバグに対するセーフティネット
+  // 発話文字列の長さに応じてタイムアウト時間を変動させる (1文字あたり300ms, 最低5秒)
+  const timeoutDuration = Math.max(5000, nextText.length * 300);
+  let isCleanedUp = false;
+
+  const cleanup = () => {
+    if (isCleanedUp) return;
+    isCleanedUp = true;
+    clearTimeout(timeoutId);
+    activeUtterances.delete(utterance);
     isSpeaking = false;
+  };
+
+  const timeoutId = setTimeout(() => {
+    console.warn('Speech synthesis timed out, forcing next queue item:', nextText);
+    cleanup();
+    processQueue();
+  }, timeoutDuration);
+
+  utterance.onend = () => {
+    cleanup();
     processQueue();
   };
 
   utterance.onerror = (e) => {
     console.error('Speech synthesis error:', e);
-    isSpeaking = false;
+    cleanup();
     processQueue();
   };
 
@@ -47,6 +77,38 @@ export const speak = (text: string) => {
 
   speechQueue.push(text);
   processQueue();
+};
+
+/**
+ * Safariなどの自動再生ポリシー対策用。
+ * ユーザーのクリックイベント等の同期コールスタック内で空の発話を実行し、再生許可を得る。
+ */
+export const unlockSpeechSynthesis = () => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+  try {
+    // Safariでのアンロック用ダミー発話 (無音のスペース文字)
+    const dummyUtterance = new SpeechSynthesisUtterance(' ');
+    dummyUtterance.volume = 0;
+    dummyUtterance.lang = 'ja-JP';
+
+    activeUtterances.add(dummyUtterance);
+    dummyUtterance.onend = () => {
+      activeUtterances.delete(dummyUtterance);
+    };
+    dummyUtterance.onerror = () => {
+      activeUtterances.delete(dummyUtterance);
+    };
+
+    // ポーズバグ対策
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+    
+    window.speechSynthesis.speak(dummyUtterance);
+  } catch (e) {
+    console.warn('SpeechSynthesis unlock failed:', e);
+  }
 };
 
 // ページのロードなどで音声リストが非同期に更新された場合のイベントハンドリング
