@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface TimerFormProps {
-  onAddTimer: (label: string, hours: number, minutes: number, seconds: number) => void;
+  onAddTimer: (label: string, hours: number, minutes: number, seconds: number, autoStart?: boolean) => void;
 }
 
 export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
@@ -9,6 +9,7 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
   const [hours, setHours] = useState<number>(0);
   const [minutes, setMinutes] = useState<number>(0);
   const [seconds, setSeconds] = useState<number>(0);
+  const [autoStart, setAutoStart] = useState<boolean>(true);
 
   const getDefaultLabel = (h: number, m: number, s: number) => {
     const totalSeconds = h * 3600 + m * 60 + s;
@@ -33,7 +34,7 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
     }
 
     const finalLabel = label.trim() || getDefaultLabel(hours, minutes, seconds);
-    onAddTimer(finalLabel, hours, minutes, seconds);
+    onAddTimer(finalLabel, hours, minutes, seconds, autoStart);
 
     // フォームリセット
     setLabel('');
@@ -158,8 +159,22 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
         </div>
       </div>
 
+      <div className="toggle-container" style={{ marginTop: '20px', marginBottom: '20px' }}>
+        <span className="toggle-label">
+          {autoStart ? '追加後に即時開始する' : '一時停止状態で追加する'}
+        </span>
+        <label className="switch">
+          <input
+            type="checkbox"
+            checked={autoStart}
+            onChange={(e) => setAutoStart(e.target.checked)}
+          />
+          <span className="slider round"></span>
+        </label>
+      </div>
+
       <button type="submit" className="btn btn-submit">
-        タイマーを開始する
+        {autoStart ? 'タイマーを開始する' : 'タイマーを追加する'}
       </button>
     </form>
   );
