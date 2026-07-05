@@ -15,6 +15,45 @@ const getAudioContext = (): AudioContext => {
 };
 
 /**
+ * Safari等ブラウザの自動再生制限を解除するために、ユーザー操作イベント内で呼び出す
+ */
+export const unlockAudioContext = (): Promise<void> => {
+  return new Promise((resolve) => {
+    try {
+      const ctx = getAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume()
+          .then(() => {
+            // iOS/Safari対策: 空のバッファを再生して完全にアクティブにする
+            const buffer = ctx.createBuffer(1, 1, 22050);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+            source.start(0);
+            resolve();
+          })
+          .catch((err) => {
+            console.warn('AudioContext resume failed in unlock:', err);
+            resolve();
+          });
+      } else {
+        // すでに running の場合も、念のため空バッファを再生して再生能力を担保する
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        resolve();
+      }
+    } catch (e) {
+      console.warn('AudioContext unlock failed:', e);
+      resolve();
+    }
+  });
+};
+
+
+/**
  * 澄んだベルの倍音成分（ハンドベル）をシミュレートして単音を再生
  */
 const playBellNote = (
@@ -70,7 +109,9 @@ export const playChime = () => {
   try {
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      ctx.resume().catch((err) => {
+        console.warn('AudioContext resume failed in playChime:', err);
+      });
     }
 
     const now = ctx.currentTime;
