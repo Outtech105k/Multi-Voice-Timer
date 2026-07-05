@@ -209,7 +209,7 @@ function App() {
 
 
   // 新規タイマー追加
-  const handleAddTimer = (label: string, hours: number, minutes: number, seconds: number) => {
+  const handleAddTimer = (label: string, hours: number, minutes: number, seconds: number, autoStart = true) => {
     unlockAudio();
     const duration = hours * 3600 + minutes * 60 + seconds;
     const now = Date.now();
@@ -218,9 +218,9 @@ function App() {
       label,
       duration,
       remaining: duration,
-      status: 'running',
+      status: autoStart ? 'running' : 'paused',
       createdAt: now,
-      startedAt: now,
+      startedAt: autoStart ? now : undefined,
       accumulatedElapsed: 0,
       // 開始時点で設定時間以下の警告は不要なため、あらかじめ警告済みフラグを立てる
       voiced30Min: duration <= 1800,
@@ -398,7 +398,9 @@ function App() {
                 )}
                 {pausedCount > 0 && (
                   <button onClick={handleResumeAll} className="btn btn-primary">
-                    すべて再開
+                    {timers.some((t) => t.status === 'paused' && t.accumulatedElapsed === 0)
+                      ? '一斉スタート'
+                      : 'すべて再開'}
                   </button>
                 )}
                 <button onClick={handleClearAll} className="btn btn-danger">
