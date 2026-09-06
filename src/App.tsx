@@ -27,7 +27,53 @@ function App() {
     localStorage.setItem('agy_voice_enabled', voiceEnabled.toString());
   }, [voiceEnabled]);
 
+  // iPad / iOS Safari 対策: 初回のユーザー操作（画面タップ・クリック）を即座にキャプチャして自動アンロック
+  useEffect(() => {
+    let unlocked = false;
+
+    const handleInitialUserGesture = () => {
+      if (unlocked) return;
+      unlocked = true;
+
+      unlockAudioContext();
+      unlockSpeechSynthesis();
+      setAudioUnlocked(true);
+
+      ['pointerdown', 'touchstart', 'touchend', 'click'].forEach((eventType) => {
+        window.removeEventListener(eventType, handleInitialUserGesture, true);
+      });
+    };
+
+    ['pointerdown', 'touchstart', 'touchend', 'click'].forEach((eventType) => {
+      window.addEventListener(eventType, handleInitialUserGesture, { capture: true, once: true });
+    });
+
+    return () => {
+      ['pointerdown', 'touchstart', 'touchend', 'click'].forEach((eventType) => {
+        window.removeEventListener(eventType, handleInitialUserGesture, true);
+      });
+    };
+  }, []);
+
+  // タブ復帰（バックグラウンドからフォアグラウンドに戻った際）の音声コンテキスト復帰
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        unlockAudioContext();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // マウント時にLocalStorageから復元
+
   useEffect(() => {
     const saved = localStorage.getItem('agy_timers');
     const savedTimeStr = localStorage.getItem('agy_timers_saved_at');
