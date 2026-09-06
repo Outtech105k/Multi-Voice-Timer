@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { normalizeTimeInputs } from '../utils/time';
 
 interface TimerFormProps {
   onAddTimer: (label: string, hours: number, minutes: number, seconds: number, autoStart?: boolean) => void;
@@ -6,9 +7,9 @@ interface TimerFormProps {
 
 export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
   const [label, setLabel] = useState('');
-  const [hours, setHours] = useState<number>(0);
-  const [minutes, setMinutes] = useState<number>(0);
-  const [seconds, setSeconds] = useState<number>(0);
+  const [hours, setHours] = useState<number | ''>(0);
+  const [minutes, setMinutes] = useState<number | ''>(0);
+  const [seconds, setSeconds] = useState<number | ''>(0);
   const [autoStart, setAutoStart] = useState<boolean>(true);
 
   const getDefaultLabel = (h: number, m: number, s: number) => {
@@ -24,17 +25,32 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
     }
   };
 
+  const handleNormalize = () => {
+    const h = typeof hours === 'number' ? hours : 0;
+    const m = typeof minutes === 'number' ? minutes : 0;
+    const s = typeof seconds === 'number' ? seconds : 0;
+
+    const normalized = normalizeTimeInputs(h, m, s);
+    setHours(normalized.hours);
+    setMinutes(normalized.minutes);
+    setSeconds(normalized.seconds);
+    return normalized;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    const normalized = handleNormalize();
+    const { hours: h, minutes: m, seconds: s } = normalized;
+
+    const totalSeconds = h * 3600 + m * 60 + s;
     if (totalSeconds <= 0) {
       alert('1秒以上の時間を設定してください。');
       return;
     }
 
-    const finalLabel = label.trim() || getDefaultLabel(hours, minutes, seconds);
-    onAddTimer(finalLabel, hours, minutes, seconds, autoStart);
+    const finalLabel = label.trim() || getDefaultLabel(h, m, s);
+    onAddTimer(finalLabel, h, m, s, autoStart);
 
     // フォームリセット
     setLabel('');
@@ -76,9 +92,12 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
             id="timer-hours"
             type="number"
             min="0"
-            max="23"
-            value={hours || ''}
-            onChange={(e) => setHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+            value={hours}
+            onChange={(e) => {
+              const val = e.target.value;
+              setHours(val === '' ? '' : Math.max(0, parseInt(val, 10) || 0));
+            }}
+            onBlur={handleNormalize}
             placeholder="0"
             className="input-number"
           />
@@ -89,9 +108,12 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
             id="timer-minutes"
             type="number"
             min="0"
-            max="59"
-            value={minutes || ''}
-            onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+            value={minutes}
+            onChange={(e) => {
+              const val = e.target.value;
+              setMinutes(val === '' ? '' : Math.max(0, parseInt(val, 10) || 0));
+            }}
+            onBlur={handleNormalize}
             placeholder="0"
             className="input-number"
           />
@@ -102,9 +124,12 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
             id="timer-seconds"
             type="number"
             min="0"
-            max="59"
-            value={seconds || ''}
-            onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+            value={seconds}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSeconds(val === '' ? '' : Math.max(0, parseInt(val, 10) || 0));
+            }}
+            onBlur={handleNormalize}
             placeholder="0"
             className="input-number"
           />
@@ -179,3 +204,4 @@ export const TimerForm: React.FC<TimerFormProps> = ({ onAddTimer }) => {
     </form>
   );
 };
+
