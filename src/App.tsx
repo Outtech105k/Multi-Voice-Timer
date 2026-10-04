@@ -259,7 +259,7 @@ function App() {
   };
 
   // リセット
-  const handleReset = (id: string) => {
+  const handleReset = (id: string, autoStart = true) => {
     unlockAudio();
     stopAlarm(id);
     setTimers((prev) =>
@@ -268,8 +268,8 @@ function App() {
         return {
           ...t,
           remaining: t.duration,
-          status: 'running',
-          startedAt: Date.now(),
+          status: autoStart ? 'running' : 'paused',
+          startedAt: autoStart ? Date.now() : undefined,
           accumulatedElapsed: 0,
           // リセット時も設定時間以下の警告は不要
           voiced30Min: t.duration <= 1800,

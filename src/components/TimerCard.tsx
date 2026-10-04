@@ -5,7 +5,7 @@ interface TimerCardProps {
   timer: Timer;
   onPause: (id: string) => void;
   onResume: (id: string) => void;
-  onReset: (id: string) => void;
+  onReset: (id: string, autoStart?: boolean) => void;
   onDelete: (id: string) => void;
 }
 
@@ -82,16 +82,39 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
       <div className="timer-controls">
         {isCompleted ? (
-          <button
-            onClick={() => onDelete(timer.id)}
-            className="btn btn-control btn-danger btn-full-width"
-            title="アラーム停止"
-            aria-label="アラーム停止"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="4" y="4" width="16" height="16" />
-            </svg>
-          </button>
+          <>
+            <button
+              onClick={() => onReset(timer.id, true)}
+              className="btn btn-control btn-resume"
+              title="リセットして再開"
+              aria-label="リセットして再開"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onReset(timer.id, false)}
+              className="btn btn-control btn-reset"
+              title="アラーム停止・リセット"
+              aria-label="アラーム停止・リセット"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onDelete(timer.id)}
+              className="btn btn-control btn-danger"
+              title="削除"
+              aria-label="削除"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </>
         ) : (
           <>
             {status === 'running' ? (
