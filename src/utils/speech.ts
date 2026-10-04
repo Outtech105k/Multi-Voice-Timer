@@ -31,7 +31,9 @@ const processQueue = () => {
 
   // 日本語の音声を探す
   const voices = window.speechSynthesis.getVoices();
-  const jaVoice = voices.find(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
+  const jaVoice = voices.find(
+    (v) => v.lang === 'ja-JP' || v.lang.replace('_', '-').toLowerCase().startsWith('ja')
+  );
   if (jaVoice) {
     utterance.voice = jaVoice;
   }
@@ -87,6 +89,9 @@ export const unlockSpeechSynthesis = () => {
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
   try {
+    // すでに発話中またはキューが存在する場合はアンロックダミーは不要
+    if (isSpeaking || speechQueue.length > 0) return;
+
     // Safariでのアンロック用ダミー発話 (無音のスペース文字)
     const dummyUtterance = new SpeechSynthesisUtterance(' ');
     dummyUtterance.volume = 0;
@@ -113,6 +118,8 @@ export const unlockSpeechSynthesis = () => {
 
 // ページのロードなどで音声リストが非同期に更新された場合のイベントハンドリング
 if (typeof window !== 'undefined' && window.speechSynthesis) {
+  // 初期ボイスリスト読み込みを促す
+  window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged = () => {
     // 日本語の音声が利用可能になったらキューを再開可能にする
     processQueue();

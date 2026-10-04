@@ -138,7 +138,7 @@ function App() {
           if (!voicedEnd) {
             textsToSpeak.push(`${timer.label}が終了しました。`);
             voicedEnd = true;
-            startAlarm(timer.id);
+            startAlarm(timer.id, voiceEnabledRef.current ? 4000 : 0);
           }
         } else {
           // 60分(3600秒)を超える場合のみ30分(1800秒)予告

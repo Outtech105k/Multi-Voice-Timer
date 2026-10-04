@@ -5,6 +5,7 @@
 
 let audioCtx: AudioContext | null = null;
 let alarmIntervalId: number | null = null;
+let alarmTimeoutId: number | null = null;
 const activeAlarms = new Set<string>();
 
 const getAudioContext = (): AudioContext => {
@@ -82,7 +83,7 @@ const playBellNote = (
     { ratio: 3.00,  gain: 0.05, decay: masterDecay * 0.16 }
   ];
 
-  partials.forEach((p) => {
+  partials.forEach((p, idx) => {
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -98,7 +99,21 @@ const playBellNote = (
     gainNode.connect(masterGain);
 
     osc.start(now);
-    osc.stop(now + p.decay + 0.1);
+    const stopTime = now + p.decay + 0.1;
+    osc.stop(stopTime);
+
+    // リソース解放のための明示的切断
+    osc.onended = () => {
+      try {
+        osc.disconnect();
+        gainNode.disconnect();
+        if (idx === 0) {
+          masterGain.disconnect();
+        }
+      } catch {
+        // すでに切断されている場合は無視
+      }
+    };
   });
 };
 
@@ -129,22 +144,35 @@ export const playChime = () => {
 
 /**
  * 特定のタイマーの完了アラーム（チャイムのループ再生）を開始する
+ * @param timerId タイマーID
+ * @param delayLoopMs ループ再生開始の待機時間（ミリ秒）。初回は即時鳴らし、ループを遅延させる場合に指定
  */
-export const startAlarm = (timerId: string) => {
+export const startAlarm = (timerId: string, delayLoopMs = 0) => {
   activeAlarms.add(timerId);
 
-  if (!alarmIntervalId) {
+  if (!alarmIntervalId && !alarmTimeoutId) {
     // 初回は即座に鳴らす
     playChime();
 
-    // 2.5秒おきに「キンコン」を繰り返し再生するループを設定
-    alarmIntervalId = window.setInterval(() => {
-      if (activeAlarms.size > 0) {
-        playChime();
-      } else {
-        stopAllAlarms();
+    const scheduleInterval = () => {
+      alarmTimeoutId = null;
+      if (activeAlarms.size > 0 && !alarmIntervalId) {
+        // 2.5秒おきに「キンコン」を繰り返し再生するループを設定
+        alarmIntervalId = window.setInterval(() => {
+          if (activeAlarms.size > 0) {
+            playChime();
+          } else {
+            stopAllAlarms();
+          }
+        }, 2500);
       }
-    }, 2500);
+    };
+
+    if (delayLoopMs > 0) {
+      alarmTimeoutId = window.setTimeout(scheduleInterval, delayLoopMs);
+    } else {
+      scheduleInterval();
+    }
   }
 };
 
@@ -165,5 +193,9 @@ const stopAllAlarms = () => {
   if (alarmIntervalId) {
     clearInterval(alarmIntervalId);
     alarmIntervalId = null;
+  }
+  if (alarmTimeoutId) {
+    clearTimeout(alarmTimeoutId);
+    alarmTimeoutId = null;
   }
 };
