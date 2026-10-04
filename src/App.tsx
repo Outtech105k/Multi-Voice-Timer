@@ -30,21 +30,18 @@ function App() {
   // マウント時にLocalStorageから復元
   useEffect(() => {
     const saved = localStorage.getItem('agy_timers');
-    const savedTimeStr = localStorage.getItem('agy_timers_saved_at');
     
-    if (saved && savedTimeStr) {
+    if (saved) {
       try {
         const parsedTimers = JSON.parse(saved) as Timer[];
-        const savedTime = parseInt(savedTimeStr, 10);
-        const elapsedSinceSave = Math.floor((Date.now() - savedTime) / 1000);
 
         const restoredTimers = parsedTimers.map((timer) => {
           if (timer.status !== 'running' || !timer.startedAt) {
             return timer;
           }
 
-          // 保存されてから経過した総時間
-          const totalElapsed = (timer.accumulatedElapsed || 0) + elapsedSinceSave + Math.floor((Date.now() - timer.startedAt) / 1000);
+          // バックグラウンド経過時間を加味した総経過時間
+          const totalElapsed = (timer.accumulatedElapsed || 0) + Math.floor((Date.now() - timer.startedAt) / 1000);
           
           let nextStatus: Timer['status'] = timer.status;
           let remaining = timer.duration - totalElapsed;
